@@ -4,6 +4,9 @@
 *.dll
 *.so
 *.dylib
+/futures-*
+/generator-*
+/fan-oi-*
 
 # Test binary, built with `go test -c`
 *.test

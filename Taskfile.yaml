@@ -1,0 +1,112 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task: build
+    silent: true
+
+  build:
+    desc: Build all
+    cmds:
+      - task: build-futures
+      - task: build-generator
+      - task: build-fan
+
+  build-futures:
+    desc: Build the futures patrern
+    cmds:
+      - task: build-futures:sync
+      - task: build-futures:async
+      - task: build-futures:better
+
+  build-futures:sync:
+    desc: Build the 'sync' version of the futures patrern
+    cmds:
+      - go build -o futures-sync ./futures/sync
+
+  build-futures:async:
+    desc: Build the 'async' version of the futures patrern
+    cmds:
+      - go build -o futures-async ./futures/async
+
+  build-futures:better:
+    desc: Build the 'better' version of the futures patrern
+    cmds:
+      - go build -o futures-better ./futures/better
+
+  build-generator:
+    desc: Build the generator pattern
+    cmds:
+      - task: build-generator:slice
+      - task: build-generator:channel
+
+  build-generator:slice:
+    desc: Build the 'slice' version of the generator patrern
+    cmds:
+      - go build -o generator-slice ./generator/slice
+
+  build-generator:channel:
+    desc: Build the 'channel' version of the generator patrern
+    cmds:
+      - go build -o generator-channel-full ./generator/channel/full
+      - go build -o generator-channel-partial ./generator/channel/partial
+
+  build-fan:
+    desc: Build the fan-out, fan-in pattern
+    cmds:
+      - task: build-fan:seq
+      - task: build-fan:par
+      - task: build-fan:sorted
+
+  build-fan:seq:
+    desc: Build the sequential version of the fan-out, fan-in pattern
+    cmds:
+      - go build -o fan-oi-seq ./fan-oi/seq
+
+  build-fan:par:
+    desc: Build the parallel/concurrent version of the fan-out, fan-in pattern
+    cmds:
+      - go build -o fan-oi-par ./fan-oi/par
+
+  build-fan:sorted:
+    desc: Build the parallel/concurrent, sorted version of the fan-out, fan-in pattern
+    cmds:
+      - go build -o fan-oi-sorted ./fan-oi/sorted
+
+
+  clean:
+    desc: Clean all
+    cmds:
+      - task: clean-futures
+      - task: clean-generator
+      - task: clean-fan
+
+  clean-futures:
+    desc: Clean the futures build
+    cmds:
+      - rm futures-sync > /dev/null 2>&1
+      - rm futures-async > /dev/null 2>&1
+      - rm futures-better > /dev/null 2>&1
+    ignore_error: true
+    silent: true
+
+  clean-generator:
+    desc: Clean the generator build
+    cmds:
+      - rm generator-slice > /dev/null 2>&1
+      - rm generator-channel-full > /dev/null 2>&1
+      - rm generator-channel-partial > /dev/null 2>&1
+    ignore_error: true
+    silent: true
+
+  clean-fan:
+    desc: Clean the fan build
+    cmds:
+      - rm fan-oi-seq > /dev/null 2>&1
+      - rm fan-oi-par > /dev/null 2>&1
+      - rm fan-oi-sorted > /dev/null 2>&1
+    ignore_error: true
+    silent: true
