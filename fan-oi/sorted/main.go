@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jwmwalrus/concurrent-design-patterns/fan-oi/row"
 	"github.com/jwmwalrus/concurrent-design-patterns/generator/channel/primes"
 )
 
@@ -15,34 +14,44 @@ const (
 	nthreads = 4
 )
 
+type rowType struct{ number, square, cube int }
+
+func newRow(n int) *rowType {
+	return &rowType{n, n * n, n * n * n}
+}
+
+func (r *rowType) String() string {
+	return fmt.Sprintf("%v\t\t%v\t\t%v", r.number, r.square, r.cube)
+}
+
 func main() {
 	fmt.Printf("#\t\tprime\t\tsquare\n")
 
 	var aggrPrimes, aggrSquares, aggrCubes int
-	result := make([]row.Type, many)
+	result := make([]rowType, many)
 
 	start := time.Now()
 	nums := primes.GetFirstN(many)
 
-	var out []<-chan *row.Type
+	var out []<-chan *rowType
 	for i := 0; i < nthreads; i++ {
-		out = append(out, fanOut(nums))
+		out = append(out, fanOut(many/nthreads, nums))
 	}
 
-	in := fanIn(out...)
+	in := fanIn(many, out...)
 
 	for r := range in {
 		result = append(result, *r)
 	}
 
 	sort.Slice(result, func(i, j int) bool {
-		return result[i].Number < result[j].Number
+		return result[i].number < result[j].number
 	})
 
 	for i := range result {
-		aggrPrimes += result[i].Number
-		aggrSquares += result[i].Square
-		aggrCubes += result[i].Cube
+		aggrPrimes += result[i].number
+		aggrSquares += result[i].square
+		aggrCubes += result[i].cube
 		fmt.Printf("%v\t\t%v\n", i, &result[i])
 	}
 	fmt.Printf("\nIt took %v to generate\n", time.Since(start))
@@ -54,38 +63,41 @@ func main() {
 	)
 }
 
-func fanOut(in <-chan int) <-chan *row.Type {
-	out := make(chan *row.Type, many/nthreads)
+func fanOut(nsample int, in <-chan int) <-chan *rowType {
+	out := make(chan *rowType, nsample)
 
 	go func() {
 		defer close(out)
 
+		i := 0
 		for n := range in {
-			r := row.New(n)
+			i++
+			r := newRow(n)
 			out <- r
+			if i == nsample {
+				break
+			}
 		}
 	}()
 
 	return out
 }
 
-func fanIn(out ...<-chan *row.Type) <-chan *row.Type {
+func fanIn(ntotal int, out ...<-chan *rowType) <-chan *rowType {
 	var wg sync.WaitGroup
 
-	in := make(chan *row.Type, many)
+	in := make(chan *rowType, ntotal)
 
 	wg.Add(len(out))
 
-	output := func(rc <-chan *row.Type) {
-		defer wg.Done()
-
-		for r := range rc {
-			in <- r
-		}
-	}
-
 	for _, och := range out {
-		go output(och)
+		go func(rc <-chan *rowType) {
+			defer wg.Done()
+
+			for r := range rc {
+				in <- r
+			}
+		}(och)
 	}
 
 	go func() {

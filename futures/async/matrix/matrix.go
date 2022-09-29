@@ -45,7 +45,7 @@ func InverseAsync(m *Type) chan *Type {
 
 	go func() {
 		defer close(inv)
-		inv <- doInverse(<-promise(m))
+		inv <- doInverse(m)
 	}()
 	return inv
 }
@@ -63,16 +63,7 @@ func ProductAsync(a, b *Type) chan *Type {
 
 	go func() {
 		defer close(prod)
-		prod <- doProduct(<-promise(a), <-promise(b))
+		prod <- doProduct(a, b)
 	}()
 	return prod
-}
-
-func promise(a *Type) chan *Type {
-	future := make(chan *Type, 1)
-	go func() {
-		defer close(future)
-		future <- a
-	}()
-	return future
 }

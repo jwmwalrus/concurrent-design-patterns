@@ -54,7 +54,7 @@ func InverseAsync(cancel chan struct{}, m *Type) chan *Type {
 		select {
 		case <-cancel:
 			return
-		case inv <- doInverse(<-promise(m)):
+		case inv <- doInverse(m):
 		}
 	}()
 	return inv
@@ -77,18 +77,9 @@ func ProductAsync(cancel chan struct{}, a, b *Type) chan *Type {
 		select {
 		case <-cancel:
 			return
-		case prod <- doProduct(<-promise(a), <-promise(b)):
+		case prod <- doProduct(a, b):
 		default:
 		}
 	}()
 	return prod
-}
-
-func promise(a *Type) chan *Type {
-	future := make(chan *Type, 1)
-	go func() {
-		defer close(future)
-		future <- a
-	}()
-	return future
 }

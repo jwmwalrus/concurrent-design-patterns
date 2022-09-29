@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jwmwalrus/concurrent-design-patterns/fan-oi/row"
 	"github.com/jwmwalrus/concurrent-design-patterns/generator/channel/primes"
 )
 
@@ -13,6 +12,16 @@ const (
 	many     = 1200
 	nthreads = 4
 )
+
+type rowType struct{ number, square, cube int }
+
+func newRow(n int) *rowType {
+	return &rowType{n, n * n, n * n * n}
+}
+
+func (r *rowType) String() string {
+	return fmt.Sprintf("%v\t\t%v\t\t%v", r.number, r.square, r.cube)
+}
 
 func main() {
 	fmt.Printf("#\t\tprime\t\tsquare\n")
@@ -22,18 +31,18 @@ func main() {
 	start := time.Now()
 	nums := primes.GetFirstN(many)
 
-	var out []<-chan *row.Type
+	var out []<-chan *rowType
 	for i := 0; i < nthreads; i++ {
-		out = append(out, fanOut(nums))
+		out = append(out, fanOut(many/nthreads, nums))
 	}
 
-	in := fanIn(out...)
+	in := fanIn(many, out...)
 
 	for r := range in {
 		i++
-		aggrPrimes += r.Number
-		aggrSquares += r.Square
-		aggrCubes += r.Cube
+		aggrPrimes += r.number
+		aggrSquares += r.square
+		aggrCubes += r.cube
 		fmt.Printf("%v\t\t%v\n", i, r)
 	}
 	fmt.Printf("\nIt took %v to generate\n", time.Since(start))
@@ -45,38 +54,41 @@ func main() {
 	)
 }
 
-func fanOut(in <-chan int) <-chan *row.Type {
-	out := make(chan *row.Type, many/nthreads)
+func fanOut(nsample int, in <-chan int) <-chan *rowType {
+	out := make(chan *rowType, nsample)
 
 	go func() {
 		defer close(out)
 
+		i := 0
 		for n := range in {
-			r := row.New(n)
+			i++
+			r := newRow(n)
 			out <- r
+			if i == nsample {
+				break
+			}
 		}
 	}()
 
 	return out
 }
 
-func fanIn(out ...<-chan *row.Type) <-chan *row.Type {
+func fanIn(ntotal int, out ...<-chan *rowType) <-chan *rowType {
 	var wg sync.WaitGroup
 
-	in := make(chan *row.Type, many)
+	in := make(chan *rowType, ntotal)
 
 	wg.Add(len(out))
 
-	output := func(rc <-chan *row.Type) {
-		defer wg.Done()
-
-		for r := range rc {
-			in <- r
-		}
-	}
-
 	for _, och := range out {
-		go output(och)
+		go func(rc <-chan *rowType) {
+			defer wg.Done()
+
+			for r := range rc {
+				in <- r
+			}
+		}(och)
 	}
 
 	go func() {
