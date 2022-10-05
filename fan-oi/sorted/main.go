@@ -17,6 +17,7 @@ const (
 type rowType struct{ number, square, cube int }
 
 func newRow(n int) *rowType {
+	time.Sleep(100 * time.Microsecond)
 	return &rowType{n, n * n, n * n * n}
 }
 
